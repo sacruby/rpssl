@@ -7,18 +7,12 @@
 #---
 
 class Player
-  @@players = [ ]
-
-  def self.inherited( player )
-    @@players << player
+  def self.last_player_class
+    @player_class
   end
 
-  def self.each_pair
-    (0...(@@players.size - 1)).each do |i|
-      ((i + 1)...@@players.size).each do |j|
-        yield @@players[i], @@players[j]
-      end
-    end
+  def self.inherited( player_class )
+    @player_class = player_class
   end
 
   def initialize( opponent_name )
@@ -36,21 +30,22 @@ end
 
 class PlayerPipe
   attr_reader :read, :write, :pid, :player_class
+  alias to_s player_class
 
-  def initialize(player_class, opponent)
-    @player_class = player_class
+  def initialize(file)
     @read, write = IO.pipe
     read, @write = IO.pipe
     @pid = fork do
-      player = player_class.new(opponent)
+      require_relative file 
+      player = Player.last_player_class.new(nil)
       trap(:HUP){write.puts(player.choose)}
-      write.puts("ready")
+      write.puts(Player.last_player_class)
       while line = read.readline.chomp
         exit(0) if line == "kill"
         player.result(*line.split(" ").map(&:to_sym))
       end
     end
-    raise "Bad player" unless @read.readline.chomp == "ready"
+    @player_class = @read.readline.chomp
   end
 
   def choose
@@ -69,11 +64,19 @@ class PlayerPipe
 end
 
 class Game
-  def initialize( player1, player2 )
-    @player1_name = player1.to_s
-    @player2_name = player2.to_s
-    @player1      = PlayerPipe.new(player1, @player2_name)
-    @player2      = PlayerPipe.new(player2, @player1_name)
+  def self.each_pair(files)
+    (0...(files.size - 1)).each do |i|
+      ((i + 1)...files.size).each do |j|
+        yield files[i], files[j]
+      end
+    end
+  end
+
+  def initialize( file1, file2 )
+    @player1      = PlayerPipe.new(file1)
+    @player2      = PlayerPipe.new(file2)
+    @player1_name = @player1.to_s
+    @player2_name = @player2.to_s
 
     @score1 = 0
     @score2 = 0
@@ -165,19 +168,21 @@ if ARGV.size > 2 and ARGV[0] == "-m" and ARGV[1] =~ /^[1-9]\d*$/
   match_game_count = ARGV.shift.to_i
 end
 
-ARGV.each do |p|
+files = ARGV.map do |p|
   if test(?d, p)
+    fs = []
     Dir.foreach(p) do |file|
       next if file =~ /^\./
       next unless file =~ /\.rb$/
-      require_relative File.join(p, file)
+      fs << File.join(p, file)
     end
+    fs
   else
-    require_relative p
+    p
   end
 end
 
-Player.each_pair do |one, two|
+Game.each_pair(files.flatten) do |one, two|
   game = Game.new one, two
   game.play match_game_count
   puts game.results
