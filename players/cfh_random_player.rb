@@ -1,5 +1,3 @@
-require_relative '../rpssl'
-
 class CfhRandomPlayer < Player
   MOVES = [:spock, :rock, :paper, :scissors, :lizard, :spock]
 

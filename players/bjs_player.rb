@@ -1,5 +1,3 @@
-require_relative '../rpssl'
-
 class BjsPlayer < Player
   def initialize(opponent_name)
     super
