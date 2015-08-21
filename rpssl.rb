@@ -34,12 +34,46 @@ class Player
   end
 end
 
+class PlayerPipe
+  attr_reader :read, :write, :pid, :player_class
+
+  def initialize(player_class, opponent)
+    @player_class = player_class
+    @read, write = IO.pipe
+    read, @write = IO.pipe
+    @pid = fork do
+      player = player_class.new(opponent)
+      trap(:HUP){write.puts(player.choose)}
+      write.puts("ready")
+      while line = read.readline.chomp
+        exit(0) if line == "kill"
+        player.result(*line.split(" ").map(&:to_sym))
+      end
+    end
+    raise "Bad player" unless @read.readline.chomp == "ready"
+  end
+
+  def choose
+    Process.kill(:HUP, pid)
+    read.readline.chomp.to_sym
+  end
+
+  def result(*a)
+    write.puts(a.join(" "))
+  end
+
+  def kill
+    write.puts("kill")
+    Process.wait(pid)
+  end
+end
+
 class Game
   def initialize( player1, player2 )
     @player1_name = player1.to_s
     @player2_name = player2.to_s
-    @player1      = player1.new(@player2_name)
-    @player2      = player2.new(@player1_name)
+    @player1      = PlayerPipe.new(player1, @player2_name)
+    @player2      = PlayerPipe.new(player2, @player1_name)
 
     @score1 = 0
     @score2 = 0
@@ -87,6 +121,8 @@ class Game
   end
 
   def results
+    @player1.kill
+    @player2.kill
     match = "#{@player1_name} vs. #{@player2_name}\n" +
           "\t#{@player1_name}: #{@score1}\n" +
           "\t#{@player2_name}: #{@score2}\n"
