@@ -70,16 +70,18 @@ class Game
         win hands["paper"], hand1, hand2
       elsif choices == %w{lizard paper}
         win hands["lizard"], hand1, hand2
-      elsif choices == %w{rock lizard}
+      elsif choices == %w{lizard rock}
         win hands["rock"], hand1, hand2
-      elsif choices == %w{spock rock}
+      elsif choices == %w{rock spock}
         win hands["spock"], hand1, hand2
-      elsif choices == %w{spock scissors}
+      elsif choices == %w{scissors spock}
         win hands["spock"], hand1, hand2
-      elsif choices == %w{scissors lizard}
+      elsif choices == %w{lizard scissors}
         win hands["scissors"], hand1, hand2
       elsif choices == %w{lizard spock}
         win hands["lizard"], hand1, hand2
+      else
+        raise "Bad: #{hands.inspect}"
       end
     end
   end
@@ -111,10 +113,12 @@ class Game
       @score1 += 1
       @player1.result(hand1, hand2, :win)
       @player2.result(hand2, hand1, :lose)
-    else
+    elsif winner == @player2
       @score2 += 1
       @player1.result(hand1, hand2, :lose)
       @player2.result(hand2, hand1, :win)
+    else
+      raise "Bad result: #{winner.inspect} #{hand1.inspect} #{hand2.inspect}"
     end
   end
 end
