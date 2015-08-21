@@ -1,3 +1,4 @@
+require_relative '../rpssl'
 class CfhRotatingPlayer < Player
   QUEUE = [:rock, :paper, :scissors, :lizard, :spock]
 
