@@ -7,6 +7,13 @@ published by Pragmatic Programmers. And then changes...
 
 ...because http://www.samkass.com/theories/RPSSL.html
 
+## Prerequisites
+
+1. This has been tested with Ruby 2.1 which has test/unit installed by
+   default
+2. If using Ruby 2.2 or newer, for now, run `gem install test-unit` to
+   pick up the unit test framework used in this project.
+
 ## What to do
 
 1. If you are a new Rubyist, play with creating one or more Player classes to submit to the tournament.
